@@ -1,9 +1,12 @@
+import random
+
 import numpy as np
 import pygame
 import sys
 
 PLAYER1 = 0
 PLAYER2 = 1
+COMPUTER = 1
 SQUARE_SIZE = 60
 SQUARE_COLOR = (0, 0, 153)
 BLACK = (0, 0, 0)
@@ -30,7 +33,7 @@ def put_piece(board, piece, col, maxrows):
 
 def valid_move(board, col, maxrows, maxcols):
     if col < 0 or col >= maxcols:
-        return 0
+        return False
     return board[maxrows - 1][col] == 0
 
 
@@ -53,7 +56,7 @@ def check_winner(board, last_row, last_col, piece, maxrows, maxcols):
                 return piece
         else:
             sequence_length = 0
-    # check diag princ
+    # check principal diagonal
     row = last_row
     col = last_col
     sequence_length = 0
@@ -72,7 +75,7 @@ def check_winner(board, last_row, last_col, piece, maxrows, maxcols):
 
     if sequence_length >= 4:
         return piece
-    # check diag sec
+    # check secondary diagonal
     row = last_row
     col = last_col
     sequence_length = 0
@@ -118,7 +121,8 @@ def draw_board(screen, board, maxrows, maxcols):
 
 def run_game_pvp(maxrows, maxcols):
     pygame.init()
-    font = pygame.font.SysFont('Arial', 30)
+    font_won = pygame.font.SysFont('Arial', 30)
+    font_info = pygame.font.SysFont('Arial', 20)
     screen_size = (maxcols * SQUARE_SIZE, (maxrows + 1) * SQUARE_SIZE)
     screen = pygame.display.set_mode(screen_size)
 
@@ -150,12 +154,12 @@ def run_game_pvp(maxrows, maxcols):
                     player_turn = 1 - player_turn
 
                     if check_winner(current_board, row, move, piece, maxrows, maxcols) == piece:
-                        message = font.render("Player " + str(piece) + " won!", True, piece_color(piece))
+                        message = font_won.render("Player " + str(piece) + " won!", True, piece_color(piece))
                         screen.blit(message, (40, 10))
                         print("Player " + str(piece) + " won!")
                         game_over = True
                 else:
-                    message = font.render("The move is not valid! Please try again!", True, piece_color(piece))
+                    message = font_info.render("The move is not valid! Please try again!", True, piece_color(piece))
                     screen.blit(message, (40, 10))
                     print("The move is not valid! Please try again!")
                 print(np.flip(current_board, 0))
@@ -165,4 +169,88 @@ def run_game_pvp(maxrows, maxcols):
                     pygame.time.wait(2000)
 
 
-run_game_pvp(6, 6)
+def level1_computer(board, maxrows, maxcols):
+    valid_col = False
+    move = 0
+    while not valid_col:
+        move = random.randint(0, maxcols - 1)
+        valid_col = valid_move(board, move, maxrows, maxcols)
+    return move
+
+
+def get_first_turn(first_player):
+    if first_player == "computer":
+        return COMPUTER
+    else:
+        return PLAYER1
+
+
+def run_game_pvc(maxrows, maxcols, first_player):
+    pygame.init()
+    font_won = pygame.font.SysFont('Arial', 30)
+    font_info = pygame.font.SysFont('Arial', 20)
+    screen_size = (maxcols * SQUARE_SIZE, (maxrows + 1) * SQUARE_SIZE)
+    screen = pygame.display.set_mode(screen_size)
+
+    game_over = False
+    current_board = create_board(maxrows, maxcols)
+    draw_board(screen, current_board, maxrows, maxcols)
+    player_turn = get_first_turn(first_player)
+    print(np.flip(current_board, 0))
+    while not game_over:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+            if event.type == pygame.MOUSEMOTION:
+                x_axis = event.pos[0]
+                pygame.draw.rect(screen, BLACK, (0, 0, maxcols * SQUARE_SIZE, SQUARE_SIZE))
+                pygame.draw.circle(screen, piece_color(player_turn + 1), (x_axis, int(SQUARE_SIZE / 2)), PIECE_RADIUS)
+                pygame.display.update()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                pygame.draw.rect(screen, BLACK, (0, 0, maxcols * SQUARE_SIZE, SQUARE_SIZE))
+                if player_turn == PLAYER1:
+                    piece = PLAYER1 + 1
+                else:
+                    break
+                move = int(event.pos[0] / SQUARE_SIZE)
+
+                if valid_move(current_board, move, maxrows, maxcols):
+                    row = put_piece(current_board, piece, move, maxrows)
+                    player_turn = 1 - player_turn
+
+                    if check_winner(current_board, row, move, piece, maxrows, maxcols) == piece:
+                        message = font_won.render("You won!", True, piece_color(piece))
+                        screen.blit(message, (SQUARE_SIZE / 2, SQUARE_SIZE / 2 - 30))
+                        print("You won!")
+                        game_over = True
+                else:
+                    message = font_info.render("The move is not valid! Please try again!", True, piece_color(piece))
+                    screen.blit(message, (5, SQUARE_SIZE / 2 - 20))
+                    print("The move is not valid! Please try again!")
+                print(np.flip(current_board, 0))
+                draw_board(screen, np.flip(current_board, 0), maxrows, maxcols)
+
+                if game_over:
+                    pygame.time.wait(2000)
+                    sys.exit()
+        if player_turn == COMPUTER:
+            move = level1_computer(current_board, maxrows, maxcols)
+            piece = COMPUTER + 1
+            row = put_piece(current_board, piece, move, maxrows)
+            player_turn = 1 - player_turn
+
+            if check_winner(current_board, row, move, COMPUTER + 1, maxrows, maxcols) == piece:
+                message = font_won.render("Computer won!", True, piece_color(piece))
+                screen.blit(message, (SQUARE_SIZE / 2, SQUARE_SIZE / 2 - 30))
+                print("Computer won!")
+                game_over = True
+            print(np.flip(current_board, 0))
+            pygame.time.wait(1000)
+            draw_board(screen, np.flip(current_board, 0), maxrows, maxcols)
+            if game_over:
+                pygame.time.wait(2000)
+
+
+# run_game_pvp(6, 6)
+run_game_pvc(6, 6, "computer")
