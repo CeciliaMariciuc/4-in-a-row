@@ -1,3 +1,4 @@
+import math
 import random
 
 import numpy as np
@@ -14,6 +15,7 @@ EMPTY_SQUARE = (255, 255, 255)
 PLAYER1_SQUARE = (255, 255, 26)
 PLAYER2_SQUARE = (255, 26, 26)
 PIECE_RADIUS = (SQUARE_SIZE / 2 - 5)
+INF = 10000000
 
 
 def create_board(rows, cols):
@@ -185,6 +187,156 @@ def get_first_turn(first_player):
         return PLAYER1
 
 
+def score_sequence(sequence, player_piece, left_edge, right_edge):
+    count_pieces = sequence.count(player_piece)
+    if player_piece == 1:
+        opponent_piece = 2
+    else:
+        opponent_piece = 1
+
+    if count_pieces == 4:
+        return INF
+    if count_pieces == 3:
+        if opponent_piece in sequence[1:3]:
+            if left_edge is True or right_edge is True:
+                count_pieces -= 2
+            else:
+                count_pieces -= 1
+        else:
+            count_pieces += 4
+        return count_pieces ** 3
+    if count_pieces == 2 or count_pieces == 1:
+        count_pieces -= sequence.count(opponent_piece)
+        if sequence.count(opponent_piece) >= 1:
+            if left_edge is True and sequence[0] == player_piece:
+                count_pieces -= 1
+            if right_edge is True and sequence[3] == player_piece:
+                count_pieces -= 1
+        if count_pieces < 0:
+            count_pieces = 0
+        return count_pieces ** 3
+    return 0
+
+
+def score_array(array, player_piece):
+    score = 0
+    for i in range(len(array) - 3):
+        sequence = array[i: i + 4]
+        right_edge = False
+        left_edge = False
+        if i == 0:
+            left_edge = True
+        if i == len(array) - 4:
+            right_edge = True
+        score += score_sequence(sequence, player_piece, left_edge, right_edge)
+    return score
+
+
+def heuristic_score(board, player_piece, maxrows, maxcols):
+    score = 0
+    for row in range(maxrows):
+        row_array = [i for i in list(board[row, :])]
+        score += score_array(row_array, player_piece)
+
+    # transpose = np.transpose(board)
+    for col in range(maxcols):
+        col_array = [i for i in list(board[:, col])]
+        score += score_array(col_array, player_piece)
+
+    forward_diag = [[] for _ in range(maxrows + maxcols - 1)]
+    backward_diag = [[] for _ in range(len(forward_diag))]
+    min_backward_diag = -maxrows + 1
+
+    for x in range(maxcols):
+        for y in range(maxrows):
+            forward_diag[x + y].append(board[y][x])
+            backward_diag[x - y - min_backward_diag].append(board[y][x])
+
+    for diag in range(len(forward_diag)):
+        score += 2 * score_array(forward_diag[diag], player_piece)
+
+    for diag in range(len(backward_diag)):
+        score += 2 * score_array(backward_diag[diag], player_piece)
+    return score
+
+
+def get_best_move(board, player_piece, maxrows, maxcols):
+    best_score = 0
+    best_move = (0, 0)
+    for col in range(maxcols):
+        if valid_move(board, col, maxrows, maxcols):
+            board_temp = np.copy(board)
+            row = put_piece(board_temp, player_piece, col, maxrows)
+            score = heuristic_score(board_temp, player_piece, maxrows, maxcols)
+            print(col, score)
+            if score > best_score:
+                best_score = score
+                best_move = (row, col)
+    return best_move
+
+
+def cols_available(board, maxrows, maxcols):
+    cols = []
+    for col in range(maxcols):
+        if valid_move(board, col, maxrows, maxcols):
+            cols.append(col)
+    return cols
+
+
+def game_won(board, maxrows, maxcols):
+    for row in range(maxrows):
+        for col in range(maxcols):
+            if board[row][col] == COMPUTER + 1:
+                if check_winner(board, row, col, COMPUTER + 1, maxrows, maxcols) == COMPUTER + 1:
+                    return COMPUTER
+            elif board[row][col] == PLAYER1 + 1:
+                if check_winner(board, row, col, PLAYER1 + 1, maxrows, maxcols) == PLAYER1 + 1:
+                    return PLAYER1
+    return -1
+
+
+def is_terminal(board, maxrows, maxcols):
+    return (game_won(board, maxrows, maxcols) != -1) or len(cols_available(board, maxrows, maxcols)) == 0
+
+
+def minimax(board, depth, maximizing_player, maxrows, maxcols):
+    if depth == 0:
+        if is_terminal(board, maxrows, maxcols):
+            won = game_won(board, maxrows, maxcols)
+            if won == COMPUTER:
+                return None, INF
+            elif won == PLAYER1:
+                return None, -INF
+            else:
+                return None, 0
+        else:
+            return None, heuristic_score(board, COMPUTER + 1, maxrows, maxcols)
+    else:
+        cols = cols_available(board, maxrows, maxcols)
+        if maximizing_player:
+            score = - math.inf
+            best_col = cols[0]
+            for col in cols:
+                board_temp = np.copy(board)
+                put_piece(board_temp, COMPUTER + 1, col, maxrows)
+                new_score = minimax(board_temp, depth - 1, False, maxrows, maxcols)[1]
+                if new_score > score:
+                    score = new_score
+                    best_col = col
+            return best_col, score
+        else:
+            score = math.inf
+            best_col = cols[0]
+            for col in cols:
+                board_temp = np.copy(board)
+                put_piece(board_temp, PLAYER1 + 1, col, maxrows)
+                new_score = minimax(board_temp, depth - 1, True, maxrows, maxcols)[1]
+                if new_score < score:
+                    score = new_score
+                    best_col = col
+            return best_col, score
+
+
 def run_game_pvc(maxrows, maxcols, first_player):
     pygame.init()
     font_won = pygame.font.SysFont('Arial', 30)
@@ -201,7 +353,7 @@ def run_game_pvc(maxrows, maxcols, first_player):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
-            if event.type == pygame.MOUSEMOTION:
+            if event.type == pygame.MOUSEMOTION and player_turn == PLAYER1:
                 x_axis = event.pos[0]
                 pygame.draw.rect(screen, BLACK, (0, 0, maxcols * SQUARE_SIZE, SQUARE_SIZE))
                 pygame.draw.circle(screen, piece_color(player_turn + 1), (x_axis, int(SQUARE_SIZE / 2)), PIECE_RADIUS)
@@ -230,17 +382,14 @@ def run_game_pvc(maxrows, maxcols, first_player):
                     print("The move is not valid! Please try again!")
                 print(np.flip(current_board, 0))
                 draw_board(screen, np.flip(current_board, 0), maxrows, maxcols)
-
-                if game_over:
-                    pygame.time.wait(2000)
-                    sys.exit()
-        if player_turn == COMPUTER:
-            move = level1_computer(current_board, maxrows, maxcols)
+        if player_turn == COMPUTER and game_over is not True:
             piece = COMPUTER + 1
+            move = minimax(current_board, 4, True, maxrows, maxcols)[0]
+            print(current_board)
             row = put_piece(current_board, piece, move, maxrows)
             player_turn = 1 - player_turn
 
-            if check_winner(current_board, row, move, COMPUTER + 1, maxrows, maxcols) == piece:
+            if check_winner(current_board, row, move, piece, maxrows, maxcols) == piece:
                 message = font_won.render("Computer won!", True, piece_color(piece))
                 screen.blit(message, (SQUARE_SIZE / 2, SQUARE_SIZE / 2 - 30))
                 print("Computer won!")
@@ -248,9 +397,9 @@ def run_game_pvc(maxrows, maxcols, first_player):
             print(np.flip(current_board, 0))
             pygame.time.wait(1000)
             draw_board(screen, np.flip(current_board, 0), maxrows, maxcols)
-            if game_over:
-                pygame.time.wait(2000)
+        if game_over:
+            pygame.time.wait(2000)
 
 
 # run_game_pvp(6, 6)
-run_game_pvc(6, 6, "computer")
+run_game_pvc(6, 8, "player")
