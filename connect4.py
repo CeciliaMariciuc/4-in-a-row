@@ -16,6 +16,8 @@ PLAYER1_SQUARE = (255, 255, 26)
 PLAYER2_SQUARE = (255, 26, 26)
 PIECE_RADIUS = (SQUARE_SIZE / 2 - 5)
 INF = 10000000
+ALFA = - math.inf
+BETA = math.inf
 
 
 def create_board(rows, cols):
@@ -74,14 +76,13 @@ def check_winner(board, last_row, last_col, piece, maxrows, maxcols):
         col -= 1
         sequence_length += 1
     sequence_length -= 1
-
     if sequence_length >= 4:
         return piece
     # check secondary diagonal
     row = last_row
     col = last_col
     sequence_length = 0
-    while row >= 0 and col < maxrows and board[row][col] == piece:
+    while row >= 0 and col < maxcols and board[row][col] == piece:
         row -= 1
         col += 1
         sequence_length += 1
@@ -177,7 +178,15 @@ def level1_computer(board, maxrows, maxcols):
     while not valid_col:
         move = random.randint(0, maxcols - 1)
         valid_col = valid_move(board, move, maxrows, maxcols)
+    pygame.time.wait(1000)
     return move
+
+
+def level2_computer(board, maxrows, maxcols, move_count):
+    if move_count % 2 == 0:
+        return level1_computer(board, maxrows, maxcols)
+    else:
+        return minimax(board, 4, True, ALFA, BETA, maxrows, maxcols)[0]
 
 
 def get_first_turn(first_player):
@@ -215,6 +224,8 @@ def score_sequence(sequence, player_piece, left_edge, right_edge):
         if count_pieces < 0:
             count_pieces = 0
         return count_pieces ** 3
+    if sequence.count(opponent_piece) == 3 and sequence.count(0) == 1:
+        return -1000
     return 0
 
 
@@ -253,10 +264,10 @@ def heuristic_score(board, player_piece, maxrows, maxcols):
             backward_diag[x - y - min_backward_diag].append(board[y][x])
 
     for diag in range(len(forward_diag)):
-        score += 2 * score_array(forward_diag[diag], player_piece)
+        score += score_array(forward_diag[diag], player_piece)
 
     for diag in range(len(backward_diag)):
-        score += 2 * score_array(backward_diag[diag], player_piece)
+        score += score_array(backward_diag[diag], player_piece)
     return score
 
 
@@ -299,7 +310,7 @@ def is_terminal(board, maxrows, maxcols):
     return (game_won(board, maxrows, maxcols) != -1) or len(cols_available(board, maxrows, maxcols)) == 0
 
 
-def minimax(board, depth, maximizing_player, maxrows, maxcols):
+def minimax(board, depth, maximizing_player, alpha, beta, maxrows, maxcols):
     if depth == 0:
         if is_terminal(board, maxrows, maxcols):
             won = game_won(board, maxrows, maxcols)
@@ -319,10 +330,13 @@ def minimax(board, depth, maximizing_player, maxrows, maxcols):
             for col in cols:
                 board_temp = np.copy(board)
                 put_piece(board_temp, COMPUTER + 1, col, maxrows)
-                new_score = minimax(board_temp, depth - 1, False, maxrows, maxcols)[1]
+                new_score = minimax(board_temp, depth - 1, False, alpha, beta, maxrows, maxcols)[1]
                 if new_score > score:
                     score = new_score
                     best_col = col
+                alpha = max(score, alpha)
+                if alpha >= beta:
+                    break
             return best_col, score
         else:
             score = math.inf
@@ -330,14 +344,26 @@ def minimax(board, depth, maximizing_player, maxrows, maxcols):
             for col in cols:
                 board_temp = np.copy(board)
                 put_piece(board_temp, PLAYER1 + 1, col, maxrows)
-                new_score = minimax(board_temp, depth - 1, True, maxrows, maxcols)[1]
+                new_score = minimax(board_temp, depth - 1, True, alpha, beta, maxrows, maxcols)[1]
                 if new_score < score:
                     score = new_score
                     best_col = col
+                beta = min(score, beta)
+                if alpha >= beta:
+                    break
             return best_col, score
 
 
-def run_game_pvc(maxrows, maxcols, first_player):
+def get_move_level(level, board, maxrows, maxcols, move_count):
+    if level == "slab":
+        return level1_computer(board, maxrows, maxcols)
+    elif level == "mediu":
+        return level2_computer(board, maxrows, maxcols, move_count)
+    else:
+        return minimax(board, 4, True, ALFA, BETA, maxrows, maxcols)[0]
+
+
+def run_game_pvc(maxrows, maxcols, first_player, level):
     pygame.init()
     font_won = pygame.font.SysFont('Arial', 30)
     font_info = pygame.font.SysFont('Arial', 20)
@@ -349,6 +375,8 @@ def run_game_pvc(maxrows, maxcols, first_player):
     draw_board(screen, current_board, maxrows, maxcols)
     player_turn = get_first_turn(first_player)
     print(np.flip(current_board, 0))
+
+    computer_move_count = 0
     while not game_over:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -384,7 +412,8 @@ def run_game_pvc(maxrows, maxcols, first_player):
                 draw_board(screen, np.flip(current_board, 0), maxrows, maxcols)
         if player_turn == COMPUTER and game_over is not True:
             piece = COMPUTER + 1
-            move = minimax(current_board, 4, True, maxrows, maxcols)[0]
+            move = get_move_level(level, current_board, maxrows, maxcols, computer_move_count)
+            computer_move_count += 1
             print(current_board)
             row = put_piece(current_board, piece, move, maxrows)
             player_turn = 1 - player_turn
@@ -395,11 +424,10 @@ def run_game_pvc(maxrows, maxcols, first_player):
                 print("Computer won!")
                 game_over = True
             print(np.flip(current_board, 0))
-            pygame.time.wait(1000)
             draw_board(screen, np.flip(current_board, 0), maxrows, maxcols)
         if game_over:
             pygame.time.wait(2000)
 
 
-# run_game_pvp(6, 6)
-run_game_pvc(6, 8, "player")
+# run_game_pvp(6, 8)
+run_game_pvc(6, 8, "player", "avansat")
