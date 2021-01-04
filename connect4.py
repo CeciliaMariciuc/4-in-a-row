@@ -1,6 +1,5 @@
 import math
 import random
-
 import numpy as np
 import pygame
 import sys
@@ -122,7 +121,7 @@ def draw_board(screen, board, maxrows, maxcols):
     pygame.display.update()
 
 
-def run_game_pvp(maxrows, maxcols):
+def run_game_pvp(maxrows, maxcols, first_player):
     pygame.init()
     font_won = pygame.font.SysFont('Arial', 30)
     font_info = pygame.font.SysFont('Arial', 20)
@@ -132,7 +131,11 @@ def run_game_pvp(maxrows, maxcols):
     game_over = False
     current_board = create_board(maxrows, maxcols)
     draw_board(screen, current_board, maxrows, maxcols)
-    player_turn = PLAYER1
+
+    if first_player == "human1":
+        player_turn = PLAYER1
+    else:
+        player_turn = PLAYER2
     print(np.flip(current_board, 0))
     while not game_over:
         for event in pygame.event.get():
@@ -254,20 +257,20 @@ def heuristic_score(board, player_piece, maxrows, maxcols):
         col_array = [i for i in list(board[:, col])]
         score += score_array(col_array, player_piece)
 
-    forward_diag = [[] for _ in range(maxrows + maxcols - 1)]
-    backward_diag = [[] for _ in range(len(forward_diag))]
-    min_backward_diag = -maxrows + 1
+    forward_diagonal = [[] for _ in range(maxrows + maxcols - 1)]
+    backward_diagonal = [[] for _ in range(len(forward_diagonal))]
+    min_backward_diagonal = -maxrows + 1
 
     for x in range(maxcols):
         for y in range(maxrows):
-            forward_diag[x + y].append(board[y][x])
-            backward_diag[x - y - min_backward_diag].append(board[y][x])
+            forward_diagonal[x + y].append(board[y][x])
+            backward_diagonal[x - y - min_backward_diagonal].append(board[y][x])
 
-    for diag in range(len(forward_diag)):
-        score += score_array(forward_diag[diag], player_piece)
+    for diagonal in range(len(forward_diagonal)):
+        score += score_array(forward_diagonal[diagonal], player_piece)
 
-    for diag in range(len(backward_diag)):
-        score += score_array(backward_diag[diag], player_piece)
+    for diagonal in range(len(backward_diagonal)):
+        score += score_array(backward_diagonal[diagonal], player_piece)
     return score
 
 
@@ -427,7 +430,3 @@ def run_game_pvc(maxrows, maxcols, first_player, level):
             draw_board(screen, np.flip(current_board, 0), maxrows, maxcols)
         if game_over:
             pygame.time.wait(2000)
-
-
-# run_game_pvp(6, 8)
-run_game_pvc(6, 8, "player", "avansat")

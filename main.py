@@ -1,16 +1,28 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import connect4
+import sys
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+def get_level(computer):
+    if "slab" in computer:
+        return "slab"
+    elif "mediu" in computer:
+        return "mediu"
+    else:
+        return "avansat"
 
 
-# Press the green button in the gutter to run the script.
+def main(argv):
+    if len(argv) != 4:
+        print("You need to enter 4 arguments!")
+        sys.exit(0)
+    rows = int(argv[1])
+    cols = int(argv[2])
+    first_player = argv[3]
+    if argv[0] == "human":
+        connect4.run_game_pvp(rows, cols, first_player)
+    else:
+        connect4.run_game_pvc(rows, cols, first_player, get_level(argv[0]))
+
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    main(sys.argv[1:])
