@@ -131,12 +131,14 @@ def run_game_pvp(maxrows, maxcols, first_player):
     game_over = False
     current_board = create_board(maxrows, maxcols)
     draw_board(screen, current_board, maxrows, maxcols)
-
     if first_player == "human1":
         player_turn = PLAYER1
     else:
         player_turn = PLAYER2
-    print(np.flip(current_board, 0))
+    message = font_won.render("First player is: " + first_player, True, piece_color(player_turn + 1))
+    screen.blit(message, (SQUARE_SIZE / 2, SQUARE_SIZE / 2 - 20))
+    pygame.display.update()
+
     while not game_over:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -161,16 +163,18 @@ def run_game_pvp(maxrows, maxcols, first_player):
 
                     if check_winner(current_board, row, move, piece, maxrows, maxcols) == piece:
                         message = font_won.render("Player " + str(piece) + " won!", True, piece_color(piece))
-                        screen.blit(message, (40, 10))
+                        screen.blit(message, (SQUARE_SIZE / 2, SQUARE_SIZE / 2 - 20))
                         print("Player " + str(piece) + " won!")
                         game_over = True
                 else:
-                    message = font_info.render("The move is not valid! Please try again!", True, piece_color(piece))
-                    screen.blit(message, (40, 10))
-                    print("The move is not valid! Please try again!")
+                    message = font_info.render("The move is not valid! Try again!", True, piece_color(piece))
+                    screen.blit(message, (SQUARE_SIZE / 2, SQUARE_SIZE / 2 - 10))
+                    print("The move is not valid! Try again!")
                 print(np.flip(current_board, 0))
                 draw_board(screen, np.flip(current_board, 0), maxrows, maxcols)
 
+                if len(cols_available(current_board, maxrows, maxcols)) == 0:
+                    game_over = True
                 if game_over:
                     pygame.time.wait(2000)
 
@@ -189,6 +193,7 @@ def level2_computer(board, maxrows, maxcols, move_count):
     if move_count % 2 == 0:
         return level1_computer(board, maxrows, maxcols)
     else:
+        pygame.time.wait(500)
         return minimax(board, 4, True, ALFA, BETA, maxrows, maxcols)[0]
 
 
@@ -327,6 +332,8 @@ def minimax(board, depth, maximizing_player, alpha, beta, maxrows, maxcols):
             return None, heuristic_score(board, COMPUTER + 1, maxrows, maxcols)
     else:
         cols = cols_available(board, maxrows, maxcols)
+        if len(cols) < 1:
+            return None, 0
         if maximizing_player:
             score = - math.inf
             best_col = cols[0]
@@ -363,6 +370,7 @@ def get_move_level(level, board, maxrows, maxcols, move_count):
     elif level == "mediu":
         return level2_computer(board, maxrows, maxcols, move_count)
     else:
+        pygame.time.wait(500)
         return minimax(board, 4, True, ALFA, BETA, maxrows, maxcols)[0]
 
 
@@ -377,6 +385,11 @@ def run_game_pvc(maxrows, maxcols, first_player, level):
     current_board = create_board(maxrows, maxcols)
     draw_board(screen, current_board, maxrows, maxcols)
     player_turn = get_first_turn(first_player)
+
+    message = font_won.render("First player is: " + first_player, True, piece_color(player_turn + 1))
+    screen.blit(message, (SQUARE_SIZE / 2, SQUARE_SIZE / 2 - 20))
+    pygame.display.update()
+
     print(np.flip(current_board, 0))
 
     computer_move_count = 0
@@ -404,13 +417,13 @@ def run_game_pvc(maxrows, maxcols, first_player, level):
 
                     if check_winner(current_board, row, move, piece, maxrows, maxcols) == piece:
                         message = font_won.render("You won!", True, piece_color(piece))
-                        screen.blit(message, (SQUARE_SIZE / 2, SQUARE_SIZE / 2 - 30))
+                        screen.blit(message, (SQUARE_SIZE / 2, SQUARE_SIZE / 2 - 20))
                         print("You won!")
                         game_over = True
                 else:
-                    message = font_info.render("The move is not valid! Please try again!", True, piece_color(piece))
-                    screen.blit(message, (5, SQUARE_SIZE / 2 - 20))
-                    print("The move is not valid! Please try again!")
+                    message = font_info.render("The move is not valid! Try again!", True, piece_color(piece))
+                    screen.blit(message, (SQUARE_SIZE / 2, SQUARE_SIZE / 2 - 10))
+                    print("The move is not valid! Try again!")
                 print(np.flip(current_board, 0))
                 draw_board(screen, np.flip(current_board, 0), maxrows, maxcols)
         if player_turn == COMPUTER and game_over is not True:
@@ -423,10 +436,12 @@ def run_game_pvc(maxrows, maxcols, first_player, level):
 
             if check_winner(current_board, row, move, piece, maxrows, maxcols) == piece:
                 message = font_won.render("Computer won!", True, piece_color(piece))
-                screen.blit(message, (SQUARE_SIZE / 2, SQUARE_SIZE / 2 - 30))
+                screen.blit(message, (SQUARE_SIZE / 2, SQUARE_SIZE / 2 - 20))
                 print("Computer won!")
                 game_over = True
             print(np.flip(current_board, 0))
             draw_board(screen, np.flip(current_board, 0), maxrows, maxcols)
+        if len(cols_available(current_board, maxrows, maxcols)) == 0:
+            game_over = True
         if game_over:
-            pygame.time.wait(2000)
+            pygame.time.wait(2500)

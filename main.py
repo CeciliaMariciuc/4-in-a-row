@@ -17,6 +17,9 @@ def main(argv):
         sys.exit(0)
     rows = int(argv[1])
     cols = int(argv[2])
+    if rows < 4 or cols < 4:
+        print("The board needs at least 4 rows and 4 columns!")
+        sys.exit(0)
     first_player = argv[3]
     if argv[0] == "human":
         connect4.run_game_pvp(rows, cols, first_player)
