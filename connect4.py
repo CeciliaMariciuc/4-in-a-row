@@ -20,11 +20,17 @@ BETA = math.inf
 
 
 def create_board(rows, cols):
+    """
+    Returneaza o tabla goala cu "rows" linii si "cols" coloane
+    """
     board = np.zeros((rows, cols))
     return board
 
 
 def put_piece(board, piece, col, maxrows):
+    """
+       Plaseaza o piesa in tabla data
+    """
     clear_row = 0
     for row in range(maxrows):
         if board[row][col] == 0:
@@ -35,12 +41,19 @@ def put_piece(board, piece, col, maxrows):
 
 
 def valid_move(board, col, maxrows, maxcols):
+    """
+    Verifica daca mutarea pe coloana respectiva este valida.
+    (Coloana nu e plina si se afla in intervalul tablei)
+    """
     if col < 0 or col >= maxcols:
         return False
     return board[maxrows - 1][col] == 0
 
 
 def check_winner(board, last_row, last_col, piece, maxrows, maxcols):
+    """
+    Returneaza daca playerul cu piesa -piece- a facut o mutare castigatoare
+    """
     # check row
     sequence_length = 0
     for col in range(maxcols):
@@ -99,6 +112,9 @@ def check_winner(board, last_row, last_col, piece, maxrows, maxcols):
 
 
 def piece_color(piece):
+    """
+    Returneaza culoarea asociata piesei respective
+    """
     if piece == 0:
         return EMPTY_SQUARE
     elif piece == 1:
@@ -109,6 +125,11 @@ def piece_color(piece):
 
 
 def draw_board(screen, board, maxrows, maxcols):
+    """
+    Construirea grafica a tablei in functie de piesele existente:
+    - Square pentru casuta libera
+    - Cerc pentru o piesa de o anumita culoare
+    """
     for col in range(maxcols):
         for row in range(maxrows):
             pygame.draw.rect(screen, SQUARE_COLOR,
@@ -122,6 +143,12 @@ def draw_board(screen, board, maxrows, maxcols):
 
 
 def run_game_pvp(maxrows, maxcols, first_player):
+    """
+    Rularea jocului intre jucatori de tip human(player vs player)
+    Jocul se incheie cand un jucator a castigat sau cand nu mai exista coloane libere.
+    First_player reprezinta primul jucator, poate avea valorile: human1, human2
+    maxrows si maxcols reprezinta dimensiunea tablei.
+    """
     pygame.init()
     font_won = pygame.font.SysFont('Arial', 30)
     font_info = pygame.font.SysFont('Arial', 20)
@@ -180,6 +207,9 @@ def run_game_pvp(maxrows, maxcols, first_player):
 
 
 def level1_computer(board, maxrows, maxcols):
+    """
+    Returneaza o mutare random valida in tabla data
+    """
     valid_col = False
     move = 0
     while not valid_col:
@@ -190,6 +220,11 @@ def level1_computer(board, maxrows, maxcols):
 
 
 def level2_computer(board, maxrows, maxcols, move_count):
+    """
+    Returneaza o mutare valida in functie de numarul mutarii.
+    Pentru o mutare para: mutare random
+    Pentru o mutare impara: mutare inteligenta(folosind minimax)
+    """
     if move_count % 2 == 0:
         return level1_computer(board, maxrows, maxcols)
     else:
@@ -198,6 +233,9 @@ def level2_computer(board, maxrows, maxcols, move_count):
 
 
 def get_first_turn(first_player):
+    """
+    Obtine primul jucator pentru modul jucator vs computer
+    """
     if first_player == "computer":
         return COMPUTER
     else:
@@ -205,6 +243,11 @@ def get_first_turn(first_player):
 
 
 def score_sequence(sequence, player_piece, left_edge, right_edge):
+    """
+    Calculeaza scorul unei secvente de 4 casute in functie de
+    numarul de piese de tip - player-piece -  si de faptul daca
+    se afla la una din marginile tablei
+    """
     count_pieces = sequence.count(player_piece)
     if player_piece == 1:
         opponent_piece = 2
@@ -238,6 +281,11 @@ def score_sequence(sequence, player_piece, left_edge, right_edge):
 
 
 def score_array(array, player_piece):
+    """
+    Calculeaza score-ul unui array de casute prin impartirea lor
+    in secvente de 4 casute
+    (score-ul unei secvente se face cu functia: score_sequence)
+    """
     score = 0
     for i in range(len(array) - 3):
         sequence = array[i: i + 4]
@@ -252,6 +300,13 @@ def score_array(array, player_piece):
 
 
 def heuristic_score(board, player_piece, maxrows, maxcols):
+    """
+    Calculeaza score-ul unei table, prin impartirea acestea in array-uri:
+    - array-uri de linii
+    - array-uri de coloane
+    - array-uri de diagonale secundare/principale
+    = suma acestor scoruri
+    """
     score = 0
     for row in range(maxrows):
         row_array = [i for i in list(board[row, :])]
@@ -280,6 +335,9 @@ def heuristic_score(board, player_piece, maxrows, maxcols):
 
 
 def get_best_move(board, player_piece, maxrows, maxcols):
+    """
+       Calculeaza o cea mai buna mutare in functie de scor-ul euristic
+    """
     best_score = 0
     best_move = (0, 0)
     for col in range(maxcols):
@@ -295,6 +353,9 @@ def get_best_move(board, player_piece, maxrows, maxcols):
 
 
 def cols_available(board, maxrows, maxcols):
+    """
+        Returneaza coloanele care nu sunt pline din tabla primita
+    """
     cols = []
     for col in range(maxcols):
         if valid_move(board, col, maxrows, maxcols):
@@ -303,6 +364,10 @@ def cols_available(board, maxrows, maxcols):
 
 
 def game_won(board, maxrows, maxcols):
+    """
+       Verifica daca exista un castigator in tabla curenta
+       (pentru modul player vs computer)
+    """
     for row in range(maxrows):
         for col in range(maxcols):
             if board[row][col] == COMPUTER + 1:
@@ -315,10 +380,23 @@ def game_won(board, maxrows, maxcols):
 
 
 def is_terminal(board, maxrows, maxcols):
+    """
+        Verifica daca jocul s-a terminat:
+        Un jucator a castigat SAU
+        Nu mai sunt mutari disponibile
+    """
     return (game_won(board, maxrows, maxcols) != -1) or len(cols_available(board, maxrows, maxcols)) == 0
 
 
 def minimax(board, depth, maximizing_player, alpha, beta, maxrows, maxcols):
+    """
+       Functie care afla cea mai buna mutare posibila in functie de scor astfel:
+       - daca jucatorul curent este maximizant, se cauta tranzitia cu cel mai mare scor
+         pentru tabla curenta
+       - daca jucatorul curent este minimizant, se cauta tranzitia cu cel mai mic scor
+         pentru tabla curenta
+       , unde tranzitiile sunt toate mutarile disponibile <=> coloane care nu sunt pline
+    """
     if depth == 0:
         if is_terminal(board, maxrows, maxcols):
             won = game_won(board, maxrows, maxcols)
@@ -365,6 +443,11 @@ def minimax(board, depth, maximizing_player, alpha, beta, maxrows, maxcols):
 
 
 def get_move_level(level, board, maxrows, maxcols, move_count):
+    """
+      Returneaza o mutare pentru computer in functie de nivelul de
+      dificultate:
+      Nivele disponibile: slab, mediu, avansat
+    """
     if level == "slab":
         return level1_computer(board, maxrows, maxcols)
     elif level == "mediu":
@@ -375,6 +458,13 @@ def get_move_level(level, board, maxrows, maxcols, move_count):
 
 
 def run_game_pvc(maxrows, maxcols, first_player, level):
+    """
+    Rularea jocului intre jucator de tip human si jucator de tip computer(computer vs player)
+    Jocul se incheie cand un jucator a castigat sau cand nu mai exista coloane libere.
+     - First_player reprezinta primul jucator, poate avea valorile: human, computer
+    - maxrows si maxcols reprezinta dimensiunea tablei.
+    - level -> nivelul de dificultate al mutarilor computerului: slab, mediu, avansat
+    """
     pygame.init()
     font_won = pygame.font.SysFont('Arial', 30)
     font_info = pygame.font.SysFont('Arial', 20)

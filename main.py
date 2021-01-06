@@ -3,6 +3,9 @@ import sys
 
 
 def get_level(computer):
+    """
+    Returneaza nivelul de dificultate, in functie de tipul computerului
+    """
     if "slab" in computer:
         return "slab"
     elif "mediu" in computer:
@@ -12,6 +15,14 @@ def get_level(computer):
 
 
 def main(argv):
+    """
+        Rularea tipului de joc dorit.
+        - argument 1: tipul de player (valori: human, computer_avansat, computer_mediu, computer_slab)
+        - argument 2: numar linii
+        - argument 3: numar coloane
+        - argument 4: primul jucator(valori pt joc versus human: human1, human2)
+                                    (valori pt joc versus computer: human, computer)
+    """
     if len(argv) != 4:
         print("You need to enter 4 arguments!")
         sys.exit(0)
