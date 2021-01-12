@@ -309,13 +309,13 @@ def heuristic_score(board, player_piece, maxrows, maxcols):
     """
     score = 0
     for row in range(maxrows):
-        row_array = [i for i in list(board[row, :])]
-        score += score_array(row_array, player_piece)
+        rows = [i for i in list(board[row, :])]
+        score += score_array(rows, player_piece)
 
     # transpose = np.transpose(board)
     for col in range(maxcols):
-        col_array = [i for i in list(board[:, col])]
-        score += score_array(col_array, player_piece)
+        cols = [i for i in list(board[:, col])]
+        score += score_array(cols, player_piece)
 
     forward_diagonal = [[] for _ in range(maxrows + maxcols - 1)]
     backward_diagonal = [[] for _ in range(len(forward_diagonal))]
@@ -332,24 +332,6 @@ def heuristic_score(board, player_piece, maxrows, maxcols):
     for diagonal in range(len(backward_diagonal)):
         score += score_array(backward_diagonal[diagonal], player_piece)
     return score
-
-
-def get_best_move(board, player_piece, maxrows, maxcols):
-    """
-       Calculeaza o cea mai buna mutare in functie de scor-ul euristic
-    """
-    best_score = 0
-    best_move = (0, 0)
-    for col in range(maxcols):
-        if valid_move(board, col, maxrows, maxcols):
-            board_temp = np.copy(board)
-            row = put_piece(board_temp, player_piece, col, maxrows)
-            score = heuristic_score(board_temp, player_piece, maxrows, maxcols)
-            print(col, score)
-            if score > best_score:
-                best_score = score
-                best_move = (row, col)
-    return best_move
 
 
 def cols_available(board, maxrows, maxcols):
